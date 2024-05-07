@@ -1,0 +1,101 @@
+/*
+  Grabadora de voz con Arduino
+  Requiere:
+   - Módulo lector de tarjeta SD
+   - Micrófono 
+   - Parlante
+*/
+
+#include <SD.h>
+
+// Pines del módulo SD
+#define SD_ChipSelectPin 10
+
+// Pines para el micrófono y parlante
+#define AUDIO_INPUT_PIN  A0  
+#define AUDIO_OUTPUT_PIN 9
+
+File frec; // Objeto para el archivo de grabación
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(AUDIO_OUTPUT_PIN, OUTPUT);
+  
+  if (!SD.begin(SD_ChipSelectPin)) {
+    Serial.println("Error al iniciar la tarjeta SD");
+    return;
+  }
+  
+  Serial.println("Listo para grabar");
+}
+
+void loop() {
+  if (Serial.available()) {
+    char c = Serial.read();
+    
+    if (c == 'g') { // Comando para grabar
+      grabar();
+    } else if (c == 'r') { // Comando para reproducir
+      reproducir();
+    }
+  }
+}
+
+void grabar() {
+  Serial.println("Grabando...");
+  
+  frec = SD.open("grabacion.wav", FILE_WRITE);
+  
+  if (frec) {
+    int samplesRead;
+    byte data[512];
+    
+    while(frec) {
+      samplesRead = capturarAudio(data, 512);
+      frec.write(data, samplesRead);
+    }
+    
+    frec.close();
+    Serial.println("Grabación finalizada");
+  } else {
+    Serial.println("Error al abrir el archivo");
+  }
+}
+
+void reproducir() {
+  Serial.println("Reproduciendo...");
+  
+  frec = SD.open("grabacion.wav");
+  
+  if (frec) {
+    int samplesRead;
+    byte data[512];
+    
+    while(frec.available()) {
+      samplesRead = frec.read(data, 512);
+      reproducirAudio(data, samplesRead);
+    }
+    
+    frec.close();
+    Serial.println("Reproducción finalizada");
+  } else {
+    Serial.println("Error al abrir el archivo");
+  }
+}
+
+int capturarAudio(byte datos[], int maxMuestras) {
+  int muestrasLeidas = 0;
+  
+  while(muestrasLeidas < maxMuestras) {
+    int muestra = analogRead(AUDIO_INPUT_PIN);
+    datos[muestrasLeidas++] = (byte)(muestra >> 2);
+  }
+  
+  return muestrasLeidas;
+}
+
+void reproducirAudio(byte datos[], int muestras) {
+  for(int i=0; i<muestras; i++) {
+    tone(AUDIO_OUTPUT_PIN, datos[i], 20);
+  }
+}
