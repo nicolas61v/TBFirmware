@@ -1,11 +1,3 @@
-/*
-  Grabadora de voz con Arduino
-  Requiere:
-   - Módulo lector de tarjeta SD
-   - Micrófono 
-   - Parlante
-*/
-
 #include <SD.h>
 
 // Pines del módulo SD
