@@ -4,13 +4,13 @@
 #include "soc/rtc_cntl_reg.h"
 #include "quirc.h"
 #include "Arduino.h"
-#include "SD.h"
-#include "Audio.h"
+#include "SD.h"    // Nuevo
+#include "Audio.h" // Nuevo
 #include "SPI.h"
 
-#define SD_CS         0 // GPIO0 (D8)
+#define SD_CS         0 // GPIO0 (D8) --- Nuevo
 
-// Audio
+// Audio -- Nuevo
 #define MAX98357A_I2S_DOUT  10
 #define MAX98357A_I2S_BCLK 9
 #define MAX98357A_I2S_LRC  8
@@ -160,12 +160,12 @@ void setup() {
   Serial.println();
   /* ---------------------------------------- */
 
-  if (!SD.begin(SD_CS)) {
+  if (!SD.begin(SD_CS)) { // Nuevo
     Serial.println("Error inicializando la tarjeta SD!");
     return;
   }
 
-  audio.setPinout(MAX98357A_I2S_BCLK, MAX98357A_I2S_LRC, MAX98357A_I2S_DOUT);
+  audio.setPinout(MAX98357A_I2S_BCLK, MAX98357A_I2S_LRC, MAX98357A_I2S_DOUT); // Nuevo
   audio.setVolume(100);
 
   /* ---------------------------------------- Camera configuration. */
@@ -298,13 +298,13 @@ void dumpData(const struct quirc_data *data)
 
   // Verificar si el texto del QR es "prender" o "apagar"
   if (strcmp(QRCodeResult.c_str(), "encender") == 0) {
-    if (audio.connecttoFS(SD, "/Imagine.wav")) {
+    if (audio.connecttoFS(SD, "/Imagine.wav")) { //Nuevo
       Serial.println("Reproduciendo Imagine.wav");
     } else {
       Serial.println("Error al reproducir Imagine.wav");
     }
 
-    while (audio.isRunning()) {
+    while (audio.isRunning()) { // Nuevo
       audio.loop();
     }
    tone(Buzz, 311.127, 333);
