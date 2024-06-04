@@ -3,6 +3,16 @@
 #include "soc/soc.h"
 #include "soc/rtc_cntl_reg.h"
 #include "quirc.h"
+#include "Arduino.h"
+#include "SD.h"
+#include "Audio.h"
+#include "SPI.h"
+
+// Audio
+#define MAX98357A_I2S_DOUT  10
+#define MAX98357A_I2S_BCLK 9
+#define MAX98357A_I2S_LRC  8
+Audio audio;
 /* ======================================== */
 
 // creating a task handle
@@ -150,6 +160,9 @@ void setup() {
   Serial.setDebugOutput(true);
   Serial.println();
   /* ---------------------------------------- */
+
+  audio.setPinout(MAX98357A_I2S_BCLK, MAX98357A_I2S_LRC, MAX98357A_I2S_DOUT);
+  audio.setVolume(100);
 
   /* ---------------------------------------- Camera configuration. */
   Serial.println("Start configuring and initializing the camera...");
