@@ -303,6 +303,10 @@ void dumpData(const struct quirc_data *data)
     } else {
       Serial.println("Error al reproducir Imagine.wav");
     }
+
+    while (audio.isRunning()) {
+      audio.loop();
+    }
    tone(Buzz, 311.127, 333);
   noTone(Buzz);
   tone(Buzz, 391.995, 333);
