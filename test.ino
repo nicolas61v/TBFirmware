@@ -8,6 +8,8 @@
 #include "Audio.h"
 #include "SPI.h"
 
+#define SD_CS         0 // GPIO0 (D8)
+
 // Audio
 #define MAX98357A_I2S_DOUT  10
 #define MAX98357A_I2S_BCLK 9
@@ -149,9 +151,6 @@ int Buzz = 12;
 
 /* __________ VOID SETTUP() */
 void setup() {
-  pinMode(Buzz,OUTPUT);
-  // put your setup code here, to run once:
-
   // Disable brownout detector.
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
 
@@ -160,6 +159,11 @@ void setup() {
   Serial.setDebugOutput(true);
   Serial.println();
   /* ---------------------------------------- */
+
+  if (!SD.begin(SD_CS)) {
+    Serial.println("Error inicializando la tarjeta SD!");
+    return;
+  }
 
   audio.setPinout(MAX98357A_I2S_BCLK, MAX98357A_I2S_LRC, MAX98357A_I2S_DOUT);
   audio.setVolume(100);
@@ -294,6 +298,11 @@ void dumpData(const struct quirc_data *data)
 
   // Verificar si el texto del QR es "prender" o "apagar"
   if (strcmp(QRCodeResult.c_str(), "encender") == 0) {
+    if (audio.connecttoFS(SD, "/Imagine.wav")) {
+      Serial.println("Reproduciendo Imagine.wav");
+    } else {
+      Serial.println("Error al reproducir Imagine.wav");
+    }
    tone(Buzz, 311.127, 333);
   noTone(Buzz);
   tone(Buzz, 391.995, 333);
