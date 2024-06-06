@@ -8,12 +8,12 @@
 #include "Audio.h" // Nuevo
 #include "SPI.h"
 
-#define SD_CS         0 // GPIO0 (D8) --- Nuevo
+#define SD_CS  21 // GPIO0 (D8) --- Nuevo
 
 // Audio -- Nuevo
-#define MAX98357A_I2S_DOUT  10
-#define MAX98357A_I2S_BCLK 9
-#define MAX98357A_I2S_LRC  8
+#define MAX98357A_I2S_DOUT 4
+#define MAX98357A_I2S_BCLK 5
+#define MAX98357A_I2S_LRC  6
 Audio audio;
 /* ======================================== */
 
