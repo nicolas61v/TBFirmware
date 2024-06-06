@@ -65,7 +65,7 @@ struct QRCodeData qrCodeData;
 String QRCodeResult = "";
 /* ======================================== */
 
-/* __________ VOID SETTUP() */
+/* __________ VOID SETUP() */
 void setup() {
   // Disable brownout detector.
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
@@ -79,6 +79,8 @@ void setup() {
   if (!SD.begin(SD_CS)) { // Nuevo
     Serial.println("Error inicializando la tarjeta SD!");
     return;
+  } else {
+    Serial.println("Tarjeta SD inicializada correctamente."); // Nuevo
   }
 
   audio.setPinout(MAX98357A_I2S_BCLK, MAX98357A_I2S_LRC, MAX98357A_I2S_DOUT); // Nuevo
@@ -138,6 +140,7 @@ void setup() {
              1,                     /* priority of the task */
              &QRCodeReader_Task,    /* Task handle to keep track of created task */
              0);                    /* pin task to core 0 */
+  Serial.println("QRCodeReader_Task created successfully."); // Nuevo
   /* ---------------------------------------- */
 }
 /* __________ */
@@ -172,6 +175,8 @@ void QRCodeReader( void * pvParameters ){
         continue;
       }   
       
+      Serial.println("Camera capture succeeded."); // Nuevo
+      
       quirc_resize(q, fb->width, fb->height);
       image = quirc_begin(q, NULL, NULL);
       memcpy(image, fb->buf, fb->len);
@@ -190,7 +195,9 @@ void QRCodeReader( void * pvParameters ){
           dumpData(&data);
         } 
         Serial.println();
-      } 
+      } else {
+        Serial.println("No QR code detected."); // Nuevo
+      }
       
       esp_camera_fb_return(fb);
       fb = NULL;
