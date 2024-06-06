@@ -21,112 +21,29 @@ Audio audio;
 TaskHandle_t QRCodeReader_Task; 
 
 /* ======================================== Select camera model */
-//#define CAMERA_MODEL_WROVER_KIT
-//#define CAMERA_MODEL_ESP_EYE
-//#define CAMERA_MODEL_M5STACK_PSRAM
-//#define CAMERA_MODEL_M5STACK_WITHOUT_PSRAM
-//#define CAMERA_MODEL_M5STACK_WITHOUT_PSRAM
-#define CAMERA_MODEL_AI_THINKER
+
 /* ======================================== */
 
 /* ======================================== GPIO of camera models */
-#if defined(CAMERA_MODEL_WROVER_KIT)
-  #define PWDN_GPIO_NUM    -1
-  #define RESET_GPIO_NUM   -1
-  #define XCLK_GPIO_NUM    21
-  #define SIOD_GPIO_NUM    26
-  #define SIOC_GPIO_NUM    27
-  
-  #define Y9_GPIO_NUM      35
-  #define Y8_GPIO_NUM      34
-  #define Y7_GPIO_NUM      39
-  #define Y6_GPIO_NUM      36
-  #define Y5_GPIO_NUM      19
-  #define Y4_GPIO_NUM      18
-  #define Y3_GPIO_NUM       5
-  #define Y2_GPIO_NUM       4
-  #define VSYNC_GPIO_NUM   25
-  #define HREF_GPIO_NUM    23
-  #define PCLK_GPIO_NUM    22
 
-#elif defined(CAMERA_MODEL_ESP_EYE)
-  #define PWDN_GPIO_NUM    -1
-  #define RESET_GPIO_NUM   -1
-  #define XCLK_GPIO_NUM    4
-  #define SIOD_GPIO_NUM    18
-  #define SIOC_GPIO_NUM    23
-  
-  #define Y9_GPIO_NUM      36
-  #define Y8_GPIO_NUM      37
-  #define Y7_GPIO_NUM      38
-  #define Y6_GPIO_NUM      39
-  #define Y5_GPIO_NUM      35
-  #define Y4_GPIO_NUM      14
-  #define Y3_GPIO_NUM      13
-  #define Y2_GPIO_NUM      34
-  #define VSYNC_GPIO_NUM   5
-  #define HREF_GPIO_NUM    27
-  #define PCLK_GPIO_NUM    25
+#define PWDN_GPIO_NUM     -1
+#define RESET_GPIO_NUM    -1
+#define XCLK_GPIO_NUM     10
+#define SIOD_GPIO_NUM     40
+#define SIOC_GPIO_NUM     39
 
-#elif defined(CAMERA_MODEL_M5STACK_PSRAM)
-  #define PWDN_GPIO_NUM     -1
-  #define RESET_GPIO_NUM    15
-  #define XCLK_GPIO_NUM     27
-  #define SIOD_GPIO_NUM     25
-  #define SIOC_GPIO_NUM     23
-  
-  #define Y9_GPIO_NUM       19
-  #define Y8_GPIO_NUM       36
-  #define Y7_GPIO_NUM       18
-  #define Y6_GPIO_NUM       39
-  #define Y5_GPIO_NUM        5
-  #define Y4_GPIO_NUM       34
-  #define Y3_GPIO_NUM       35
-  #define Y2_GPIO_NUM       32
-  #define VSYNC_GPIO_NUM    22
-  #define HREF_GPIO_NUM     26
-  #define PCLK_GPIO_NUM     21
+#define Y9_GPIO_NUM       48
+#define Y8_GPIO_NUM       11
+#define Y7_GPIO_NUM       12
+#define Y6_GPIO_NUM       14
+#define Y5_GPIO_NUM       16
+#define Y4_GPIO_NUM       18
+#define Y3_GPIO_NUM       17
+#define Y2_GPIO_NUM       15
+#define VSYNC_GPIO_NUM    38
+#define HREF_GPIO_NUM     47
+#define PCLK_GPIO_NUM     13
 
-#elif defined(CAMERA_MODEL_M5STACK_WITHOUT_PSRAM)
-  #define PWDN_GPIO_NUM     -1
-  #define RESET_GPIO_NUM    15
-  #define XCLK_GPIO_NUM     27
-  #define SIOD_GPIO_NUM     25
-  #define SIOC_GPIO_NUM     23
-  
-  #define Y9_GPIO_NUM       19
-  #define Y8_GPIO_NUM       36
-  #define Y7_GPIO_NUM       18
-  #define Y6_GPIO_NUM       39
-  #define Y5_GPIO_NUM        5
-  #define Y4_GPIO_NUM       34
-  #define Y3_GPIO_NUM       35
-  #define Y2_GPIO_NUM       17
-  #define VSYNC_GPIO_NUM    22
-  #define HREF_GPIO_NUM     26
-  #define PCLK_GPIO_NUM     21
-
-#elif defined(CAMERA_MODEL_AI_THINKER)
-  #define PWDN_GPIO_NUM     32
-  #define RESET_GPIO_NUM    -1
-  #define XCLK_GPIO_NUM      0
-  #define SIOD_GPIO_NUM     26
-  #define SIOC_GPIO_NUM     27
-  
-  #define Y9_GPIO_NUM       35
-  #define Y8_GPIO_NUM       34
-  #define Y7_GPIO_NUM       39
-  #define Y6_GPIO_NUM       36
-  #define Y5_GPIO_NUM       21
-  #define Y4_GPIO_NUM       19
-  #define Y3_GPIO_NUM       18
-  #define Y2_GPIO_NUM        5
-  #define VSYNC_GPIO_NUM    25
-  #define HREF_GPIO_NUM     23
-  #define PCLK_GPIO_NUM     22
-#else
-  #error "Camera model not selected"
-#endif
 /* ======================================== */
 
 /* ======================================== Variables declaration */
@@ -146,7 +63,6 @@ struct quirc_data data;
 quirc_decode_error_t err;
 struct QRCodeData qrCodeData;  
 String QRCodeResult = "";
-int Buzz = 12;
 /* ======================================== */
 
 /* __________ VOID SETTUP() */
@@ -307,24 +223,16 @@ void dumpData(const struct quirc_data *data)
     while (audio.isRunning()) { // Nuevo
       audio.loop();
     }
-   tone(Buzz, 311.127, 333);
-  noTone(Buzz);
-  tone(Buzz, 391.995, 333);
-  noTone(Buzz);
-  tone(Buzz, 466.164, 333);
-  noTone(Buzz);
-  tone(Buzz, 698.456, 1000);
-  noTone(Buzz);
-  tone(Buzz, 622.254, 500);
-  noTone(Buzz);
-  tone(Buzz, 391.995, 2000);
-  noTone(Buzz);
     Serial.println("Encendiendo el pin 12");
   } else if (strcmp(QRCodeResult.c_str(), "apagar") == 0) {
-    tone(Buzz,2000);
-    delay(500);
-    tone(Buzz,0);
-    digitalWrite(Buzz, LOW); // Apagar el pin 12
-    Serial.println("Apagando el pin 12");
+    if (audio.connecttoFS(SD, "/Imagine.wav")) { //Nuevo
+      Serial.println("Reproduciendo Imagine.wav");
+    } else {
+      Serial.println("Error al reproducir Imagine.wav");
+    }
+
+    while (audio.isRunning()) { // Nuevo
+      audio.loop();
+    }
   }
 }
