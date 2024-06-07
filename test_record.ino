@@ -7,7 +7,7 @@
 #include "SD.h"
 #include "Audio.h"
 #include "SPI.h"
-#include "driver/i2s.h" // Nuevo
+#include <I2S.h> // Nuevo
 
 #define SD_CS 21 // GPIO0 (D8) --- Nuevo
 
@@ -16,35 +16,6 @@
 #define MAX98357A_I2S_BCLK 5
 #define MAX98357A_I2S_LRC  6
 Audio audio;
-
-/* ======================================== */
-
-// I2S Pins for Microphone -- Nuevo
-#define I2S_WS 15  // Word Select pin (LRC)
-#define I2S_SD 14  // Serial Data pin (DOUT)
-#define I2S_SCK 13 // Serial Clock pin (BCLK)
-
-// I2S Configuration for Microphone -- Nuevo
-i2s_config_t i2s_config = {
-  .mode = i2s_mode_t(I2S_MODE_MASTER | I2S_MODE_RX),
-  .sample_rate = 16000,
-  .bits_per_sample = i2s_bits_per_sample_t(I2S_BITS_PER_SAMPLE_16BIT),
-  .channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT,
-  .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB),
-  .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
-  .dma_buf_count = 8,
-  .dma_buf_len = 64,
-  .use_apll = false,
-  .tx_desc_auto_clear = false,
-  .fixed_mclk = 0
-};
-
-i2s_pin_config_t pin_config = {
-  .bck_io_num = I2S_SCK,
-  .ws_io_num = I2S_WS,
-  .data_out_num = I2S_PIN_NO_CHANGE,
-  .data_in_num = I2S_SD
-};
 
 // creating a task handle
 TaskHandle_t QRCodeReader_Task;
@@ -114,6 +85,12 @@ void setup() {
   audio.setPinout(MAX98357A_I2S_BCLK, MAX98357A_I2S_LRC, MAX98357A_I2S_DOUT); // Nuevo
   audio.setVolume(100);
 
+  I2S.setAllPins(-1, 42, 41, -1, -1);
+  if (!I2S.begin(PDM_MONO_MODE, 16000, 16)) {
+    Serial.println("Failed to initialize I2S!");
+    while (1); // do nothing
+  }
+
   /* ---------------------------------------- Camera configuration. */
   Serial.println("Start configuring and initializing the camera...");
   camera_config_t config;
@@ -140,11 +117,6 @@ void setup() {
   config.frame_size = FRAMESIZE_QVGA;
   config.jpeg_quality = 15;
   config.fb_count = 1;
-  
-  #if defined(CAMERA_MODEL_ESP_EYE)
-    pinMode(13, INPUT_PULLUP);
-    pinMode(14, INPUT_PULLUP);
-  #endif
 
   esp_err_t err = esp_camera_init(&config);
   if (err != ESP_OK) {
@@ -157,23 +129,7 @@ void setup() {
   
   Serial.println("Configure and initialize the camera successfully.");
   Serial.println();
-  /* ---------------------------------------- */
-
-  // Inicializar el I2S para el micrófono -- Nuevo
-  Serial.println("Inicializando I2S...");
-  err = i2s_driver_install(I2S_NUM_0, &i2s_config, 0, NULL);
-  if (err != ESP_OK) {
-    Serial.printf("Error instalando el driver I2S: %d\n", err);
-    while (true);
-  }
-
-  err = i2s_set_pin(I2S_NUM_0, &pin_config);
-  if (err != ESP_OK) {
-    Serial.printf("Error configurando los pines I2S: %d\n", err);
-    while (true);
-  }
-  Serial.println("I2S inicializado correctamente.");
-
+  
   /* ---------------------------------------- create "QRCodeReader_Task" using the xTaskCreatePinnedToCore() function */
   xTaskCreatePinnedToCore(
              QRCodeReader,          /* Task function. */
@@ -288,23 +244,12 @@ void dumpData(const struct quirc_data *data)
     Serial.println("Apagando el pin 12");
     digitalWrite(12, LOW); // Asumimos que el pin 12 está configurado correctamente
   } else if (strcmp(QRCodeResult.c_str(), "api") == 0) { // Nuevo
-    // Grabación de audio por 10 segundos
-    const char *audio_filename = "/recorded_audio.wav";
-    File audioFile = SD.open(audio_filename, FILE_WRITE);
-    if (!audioFile) {
-      Serial.println("Error abriendo el archivo para grabación.");
-      return;
-    }
-
-    Serial.println("Grabando audio por 10 segundos...");
-    int16_t i2s_buffer[1024];
-    size_t bytes_read;
+    
     uint32_t start_time = millis();
     while (millis() - start_time < 10000) { // Grabar por 10 segundos
-      i2s_read(I2S_NUM_0, (void*) i2s_buffer, sizeof(i2s_buffer), &bytes_read, portMAX_DELAY);
-      audioFile.write((uint8_t*) i2s_buffer, bytes_read);
+      int sample = I2S.read();
+      Serial.println(sample);
     }
-    audioFile.close();
     Serial.println("Grabación completada.");
   }
 }
