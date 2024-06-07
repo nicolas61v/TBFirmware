@@ -7,6 +7,7 @@
 #include "SD.h"
 #include "Audio.h"
 #include "SPI.h"
+#include "FS.h"
 #include <I2S.h> // Nuevo
 
 #define SD_CS 21 // GPIO0 (D8) 
