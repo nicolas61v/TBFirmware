@@ -342,4 +342,12 @@ void generate_wav_header(uint8_t *wav_header, uint32_t wav_size, uint32_t sample
     0x10, 0x00, 0x00, 0x00, // Subchunk1Size (16 for PCM)
     0x01, 0x00, // AudioFormat (1 for PCM)
     0x01, 0x00, // NumChannels (1 channel)
-    sample_rate,
+    sample_rate, sample_rate >> 8, sample_rate >> 16, sample_rate >> 24, // SampleRate
+    byte_rate, byte_rate >> 8, byte_rate >> 16, byte_rate >> 24, // ByteRate
+    0x02, 0x00, // BlockAlign
+    0x10, 0x00, // BitsPerSample (16 bits)
+    'd', 'a', 't', 'a', // Subchunk2ID
+    wav_size, wav_size >> 8, wav_size >> 16, wav_size >> 24, // Subchunk2Size
+  };
+  memcpy(wav_header, set_wav_header, sizeof(set_wav_header));
+}
