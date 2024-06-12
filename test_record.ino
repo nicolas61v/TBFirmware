@@ -8,7 +8,7 @@
 #include "Audio.h"
 #include "SPI.h"
 #include "FS.h"
-#include <driver/i2s.h>  // Nuevo
+#include <I2S.h> // Nuevo
 
 #define SD_CS 21 // GPIO0 (D8) 
 #define RECORD_TIME   10  // Nuevo
@@ -84,12 +84,6 @@ void setup() {
   Serial.println();
   /* ---------------------------------------- */
 
-  I2S.setAllPins(-1, 42, 41, -1, -1);
-  if (!I2S.begin(PDM_MONO_MODE, SAMPLE_RATE, SAMPLE_BITS)) {
-    Serial.println("Failed to initialize I2S!");
-    while (1); // do nothing
-  }
-
   if (!SD.begin(SD_CS)) { // Nuevo
     Serial.println("Error inicializando la tarjeta SD!");
     return;
@@ -99,6 +93,12 @@ void setup() {
 
   audio.setPinout(MAX98357A_I2S_BCLK, MAX98357A_I2S_LRC, MAX98357A_I2S_DOUT); // Nuevo
   audio.setVolume(100);
+
+  I2S.setAllPins(-1, 42, 41, -1, -1);
+  if (!I2S.begin(PDM_MONO_MODE, 16000, 16)) {
+    Serial.println("Failed to initialize I2S!");
+    while (1); // do nothing
+  }
 
   /* ---------------------------------------- Camera configuration. */
   Serial.println("Start configuring and initializing the camera...");
