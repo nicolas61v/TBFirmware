@@ -230,8 +230,7 @@ void dumpData(const struct quirc_data *data)
     while (audio.isRunning()) { // Nuevo
       audio.loop();
     }
-    Serial.println("Encendiendo el pin 12");
-    digitalWrite(12, HIGH); // Asumimos que el pin 12 está configurado correctamente
+   
   } else if (strcmp(QRCodeResult.c_str(), "apagar") == 0) {
     if (audio.connecttoFS(SD, "/sound1.wav")) { //Nuevo
       Serial.println("Reproduciendo Audio");
@@ -242,9 +241,6 @@ void dumpData(const struct quirc_data *data)
     while (audio.isRunning()) { // Nuevo
       audio.loop();
     }
-    Serial.println("Apagando el pin 12");
-    digitalWrite(12, LOW); // Asumimos que el pin 12 está configurado correctamente
-  }
 
   } else if (strcmp(QRCodeResult.c_str(), "api") == 0) {
     if (audio.connecttoFS(SD, "/audio_rec.wav")) { //Nuevo
@@ -256,7 +252,5 @@ void dumpData(const struct quirc_data *data)
     while (audio.isRunning()) { // Nuevo
       audio.loop();
     }
-    Serial.println("Apagando el pin 12");
-    digitalWrite(12, LOW); // Asumimos que el pin 12 está configurado correctamente
   }
 }
