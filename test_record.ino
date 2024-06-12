@@ -4,30 +4,21 @@
 #include "soc/rtc_cntl_reg.h"
 #include "quirc.h"
 #include "Arduino.h"
-#include "SD.h"
-#include "Audio.h"
+#include "SD.h"    // Nuevo
+#include "Audio.h" // Nuevo
 #include "SPI.h"
-#include "FS.h"
-#include <I2S.h> // Nuevo
 
-#define SD_CS 21 // GPIO0 (D8) 
-#define RECORD_TIME   10  // Nuevo
-#define WAV_FILE_NAME "arduino_rec" // Nuevo
-
-// do not change for best -- Nuevo
-#define SAMPLE_RATE 16000U
-#define SAMPLE_BITS 16
-#define WAV_HEADER_SIZE 44
-#define VOLUME_GAIN 2
+#define SD_CS  21 // GPIO0 (D8) --- Nuevo
 
 // Audio -- Nuevo
 #define MAX98357A_I2S_DOUT 4
 #define MAX98357A_I2S_BCLK 5
 #define MAX98357A_I2S_LRC  6
 Audio audio;
+/* ======================================== */
 
 // creating a task handle
-TaskHandle_t QRCodeReader_Task;
+TaskHandle_t QRCodeReader_Task; 
 
 /* ======================================== Select camera model */
 
@@ -35,28 +26,29 @@ TaskHandle_t QRCodeReader_Task;
 
 /* ======================================== GPIO of camera models */
 
-#define PWDN_GPIO_NUM -1
-#define RESET_GPIO_NUM -1
-#define XCLK_GPIO_NUM 10
-#define SIOD_GPIO_NUM 40
-#define SIOC_GPIO_NUM 39
+#define PWDN_GPIO_NUM     -1
+#define RESET_GPIO_NUM    -1
+#define XCLK_GPIO_NUM     10
+#define SIOD_GPIO_NUM     40
+#define SIOC_GPIO_NUM     39
 
-#define Y9_GPIO_NUM 48
-#define Y8_GPIO_NUM 11
-#define Y7_GPIO_NUM 12
-#define Y6_GPIO_NUM 14
-#define Y5_GPIO_NUM 16
-#define Y4_GPIO_NUM 18
-#define Y3_GPIO_NUM 17
-#define Y2_GPIO_NUM 15
-#define VSYNC_GPIO_NUM 38
-#define HREF_GPIO_NUM 47
-#define PCLK_GPIO_NUM 13
+#define Y9_GPIO_NUM       48
+#define Y8_GPIO_NUM       11
+#define Y7_GPIO_NUM       12
+#define Y6_GPIO_NUM       14
+#define Y5_GPIO_NUM       16
+#define Y4_GPIO_NUM       18
+#define Y3_GPIO_NUM       17
+#define Y2_GPIO_NUM       15
+#define VSYNC_GPIO_NUM    38
+#define HREF_GPIO_NUM     47
+#define PCLK_GPIO_NUM     13
 
 /* ======================================== */
 
 /* ======================================== Variables declaration */
-struct QRCodeData {
+struct QRCodeData
+{
   bool valid;
   int dataType;
   uint8_t payload[1024];
@@ -64,12 +56,12 @@ struct QRCodeData {
 };
 
 struct quirc *q = NULL;
-uint8_t *image = NULL;
+uint8_t *image = NULL;  
 camera_fb_t * fb = NULL;
 struct quirc_code code;
 struct quirc_data data;
 quirc_decode_error_t err;
-struct QRCodeData qrCodeData;
+struct QRCodeData qrCodeData;  
 String QRCodeResult = "";
 /* ======================================== */
 
@@ -93,12 +85,6 @@ void setup() {
 
   audio.setPinout(MAX98357A_I2S_BCLK, MAX98357A_I2S_LRC, MAX98357A_I2S_DOUT); // Nuevo
   audio.setVolume(100);
-
-  I2S.setAllPins(-1, 42, 41, -1, -1);
-  if (!I2S.begin(PDM_MONO_MODE, 16000, 16)) {
-    Serial.println("Failed to initialize I2S!");
-    while (1); // do nothing
-  }
 
   /* ---------------------------------------- Camera configuration. */
   Serial.println("Start configuring and initializing the camera...");
@@ -126,6 +112,11 @@ void setup() {
   config.frame_size = FRAMESIZE_QVGA;
   config.jpeg_quality = 15;
   config.fb_count = 1;
+  
+  #if defined(CAMERA_MODEL_ESP_EYE)
+    pinMode(13, INPUT_PULLUP);
+    pinMode(14, INPUT_PULLUP);
+  #endif
 
   esp_err_t err = esp_camera_init(&config);
   if (err != ESP_OK) {
@@ -138,7 +129,8 @@ void setup() {
   
   Serial.println("Configure and initialize the camera successfully.");
   Serial.println();
-  
+  /* ---------------------------------------- */
+
   /* ---------------------------------------- create "QRCodeReader_Task" using the xTaskCreatePinnedToCore() function */
   xTaskCreatePinnedToCore(
              QRCodeReader,          /* Task function. */
@@ -238,7 +230,8 @@ void dumpData(const struct quirc_data *data)
     while (audio.isRunning()) { // Nuevo
       audio.loop();
     }
-  
+    Serial.println("Encendiendo el pin 12");
+    digitalWrite(12, HIGH); // Asumimos que el pin 12 está configurado correctamente
   } else if (strcmp(QRCodeResult.c_str(), "apagar") == 0) {
     if (audio.connecttoFS(SD, "/sound1.wav")) { //Nuevo
       Serial.println("Reproduciendo Audio");
@@ -249,9 +242,12 @@ void dumpData(const struct quirc_data *data)
     while (audio.isRunning()) { // Nuevo
       audio.loop();
     }
+    Serial.println("Apagando el pin 12");
+    digitalWrite(12, LOW); // Asumimos que el pin 12 está configurado correctamente
+  }
 
-  } else if (strcmp(QRCodeResult.c_str(), "api") == 0) { // Nuevo
-    if (audio.connecttoFS(SD, "/arduino_rec.wav")) { //Nuevo
+  } else if (strcmp(QRCodeResult.c_str(), "api") == 0) {
+    if (audio.connecttoFS(SD, "/audio_rec.wav")) { //Nuevo
       Serial.println("Reproduciendo Audio");
     } else {
       Serial.println("Error al reproducir Audio");
@@ -260,72 +256,7 @@ void dumpData(const struct quirc_data *data)
     while (audio.isRunning()) { // Nuevo
       audio.loop();
     }
+    Serial.println("Apagando el pin 12");
+    digitalWrite(12, LOW); // Asumimos que el pin 12 está configurado correctamente
   }
-}
-
-void record_wav()
-{
-  uint32_t sample_size = 0;
-  uint32_t record_size = (SAMPLE_RATE * SAMPLE_BITS / 8) * RECORD_TIME;
-  uint8_t *rec_buffer = NULL;
-  Serial.printf("Ready to start recording ...\n");
-
-  File file = SD.open("/"WAV_FILE_NAME".wav", FILE_WRITE);
-  // Write the header to the WAV file
-  uint8_t wav_header[WAV_HEADER_SIZE];
-  generate_wav_header(wav_header, record_size, SAMPLE_RATE);
-  file.write(wav_header, WAV_HEADER_SIZE);
-
-  // PSRAM malloc for recording
-  rec_buffer = (uint8_t *)ps_malloc(record_size);
-  if (rec_buffer == NULL) {
-    Serial.printf("malloc failed!\n");
-    while(1) ;
-  }
-  Serial.printf("Buffer: %d bytes\n", ESP.getPsramSize() - ESP.getFreePsram());
-
-  // Start recording
-  esp_i2s::i2s_read(esp_i2s::I2S_NUM_0, rec_buffer, record_size, &sample_size, portMAX_DELAY);
-  if (sample_size == 0) {
-    Serial.printf("Record Failed!\n");
-  } else {
-    Serial.printf("Record %d bytes\n", sample_size);
-  }
-
-  // Increase volume
-  for (uint32_t i = 0; i < sample_size; i += SAMPLE_BITS/8) {
-    (*(uint16_t *)(rec_buffer+i)) <<= VOLUME_GAIN;
-  }
-
-  // Write data to the WAV file
-  Serial.printf("Writing to the file ...\n");
-  if (file.write(rec_buffer, record_size) != record_size)
-    Serial.printf("Write file Failed!\n");
-
-  free(rec_buffer);
-  file.close();
-  Serial.printf("The recording is over.\n");
-}
-
-void generate_wav_header(uint8_t *wav_header, uint32_t wav_size, uint32_t sample_rate)
-{
-  // See this for reference: http://soundfile.sapp.org/doc/WaveFormat/
-  uint32_t file_size = wav_size + WAV_HEADER_SIZE - 8;
-  uint32_t byte_rate = SAMPLE_RATE * SAMPLE_BITS / 8;
-  const uint8_t set_wav_header[] = {
-    'R', 'I', 'F', 'F', // ChunkID
-    file_size, file_size >> 8, file_size >> 16, file_size >> 24, // ChunkSize
-    'W', 'A', 'V', 'E', // Format
-    'f', 'm', 't', ' ', // Subchunk1ID
-    0x10, 0x00, 0x00, 0x00, // Subchunk1Size (16 for PCM)
-    0x01, 0x00, // AudioFormat (1 for PCM)
-    0x01, 0x00, // NumChannels (1 channel)
-    sample_rate, sample_rate >> 8, sample_rate >> 16, sample_rate >> 24, // SampleRate
-    byte_rate, byte_rate >> 8, byte_rate >> 16, byte_rate >> 24, // ByteRate
-    0x02, 0x00, // BlockAlign
-    0x10, 0x00, // BitsPerSample (16 bits)
-    'd', 'a', 't', 'a', // Subchunk2ID
-    wav_size, wav_size >> 8, wav_size >> 16, wav_size >> 24, // Subchunk2Size
-  };
-  memcpy(wav_header, set_wav_header, sizeof(set_wav_header));
 }
