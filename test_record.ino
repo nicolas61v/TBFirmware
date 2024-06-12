@@ -251,9 +251,6 @@ void dumpData(const struct quirc_data *data)
     }
 
   } else if (strcmp(QRCodeResult.c_str(), "api") == 0) { // Nuevo
-    record_wav();
-    Serial.println("Grabación completada.");
-
     if (audio.connecttoFS(SD, "/arduino_rec.wav")) { //Nuevo
       Serial.println("Reproduciendo Audio");
     } else {
