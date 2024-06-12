@@ -7,7 +7,7 @@
 #include "Audio.h"
 #include "SPI.h"
 #include "FS.h"
-#include <driver/i2s.h> // Nuevo
+#include <driver/i2s.h> // Importante
 
 #define SD_CS 21 // GPIO0 (D8) 
 #define RECORD_TIME   10  // Nuevo
@@ -94,7 +94,7 @@ void setup() {
   audio.setVolume(100);
 
   i2s_config_t i2s_config = {
-    .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX),
+    .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX), // Master receive mode
     .sample_rate = SAMPLE_RATE,
     .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
     .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
@@ -280,7 +280,9 @@ void dumpData(const struct quirc_data *data)
     }
   }
 }
+/* __________ */
 
+/* __________ Function to record audio and save it as a WAV file on the SD card. */
 void record_wav()
 {
   uint32_t sample_size = 0;
@@ -324,7 +326,9 @@ void record_wav()
   file.close();
   Serial.printf("The recording is over.\n");
 }
+/* __________ */
 
+/* __________ Function to generate a WAV file header. */
 void generate_wav_header(uint8_t *wav_header, uint32_t wav_size, uint32_t sample_rate)
 {
   // See this for reference: http://soundfile.sapp.org/doc/WaveFormat/
@@ -338,12 +342,4 @@ void generate_wav_header(uint8_t *wav_header, uint32_t wav_size, uint32_t sample
     0x10, 0x00, 0x00, 0x00, // Subchunk1Size (16 for PCM)
     0x01, 0x00, // AudioFormat (1 for PCM)
     0x01, 0x00, // NumChannels (1 channel)
-    sample_rate, sample_rate >> 8, sample_rate >> 16, sample_rate >> 24, // SampleRate
-    byte_rate, byte_rate >> 8, byte_rate >> 16, byte_rate >> 24, // ByteRate
-    0x02, 0x00, // BlockAlign
-    0x10, 0x00, // BitsPerSample (16 bits)
-    'd', 'a', 't', 'a', // Subchunk2ID
-    wav_size, wav_size >> 8, wav_size >> 16, wav_size >> 24, // Subchunk2Size
-  };
-  memcpy(wav_header, set_wav_header, sizeof(set_wav_header));
-}
+    sample_rate,
