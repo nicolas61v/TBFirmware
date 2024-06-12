@@ -1,3 +1,4 @@
+/* ======================================== Including the libraries. */
 #include "esp_camera.h"
 #include "soc/soc.h"
 #include "soc/rtc_cntl_reg.h"
@@ -7,7 +8,7 @@
 #include "Audio.h"
 #include "SPI.h"
 #include "FS.h"
-#include <driver/i2s.h> // Importante
+#include <driver/i2s.h>  // Nuevo
 
 #define SD_CS 21 // GPIO0 (D8) 
 #define RECORD_TIME   10  // Nuevo
@@ -83,6 +84,12 @@ void setup() {
   Serial.println();
   /* ---------------------------------------- */
 
+  I2S.setAllPins(-1, 42, 41, -1, -1);
+  if (!I2S.begin(PDM_MONO_MODE, SAMPLE_RATE, SAMPLE_BITS)) {
+    Serial.println("Failed to initialize I2S!");
+    while (1); // do nothing
+  }
+
   if (!SD.begin(SD_CS)) { // Nuevo
     Serial.println("Error inicializando la tarjeta SD!");
     return;
@@ -92,28 +99,6 @@ void setup() {
 
   audio.setPinout(MAX98357A_I2S_BCLK, MAX98357A_I2S_LRC, MAX98357A_I2S_DOUT); // Nuevo
   audio.setVolume(100);
-
-  i2s_config_t i2s_config = {
-    .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX), // Master receive mode
-    .sample_rate = SAMPLE_RATE,
-    .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
-    .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
-    .communication_format = (i2s_comm_format_t)(I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB),
-    .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1, // Interrupt level 1
-    .dma_buf_count = 8,
-    .dma_buf_len = 64,
-    .use_apll = false
-  };
-
-  i2s_pin_config_t pin_config = {
-    .bck_io_num = 41,
-    .ws_io_num = 42,
-    .data_out_num = -1,
-    .data_in_num = 40
-  };
-
-  i2s_driver_install(I2S_NUM_0, &i2s_config, 0, NULL);
-  i2s_set_pin(I2S_NUM_0, &pin_config);
 
   /* ---------------------------------------- Camera configuration. */
   Serial.println("Start configuring and initializing the camera...");
@@ -280,9 +265,7 @@ void dumpData(const struct quirc_data *data)
     }
   }
 }
-/* __________ */
 
-/* __________ Function to record audio and save it as a WAV file on the SD card. */
 void record_wav()
 {
   uint32_t sample_size = 0;
@@ -305,7 +288,7 @@ void record_wav()
   Serial.printf("Buffer: %d bytes\n", ESP.getPsramSize() - ESP.getFreePsram());
 
   // Start recording
-  i2s_read(I2S_NUM_0, rec_buffer, record_size, &sample_size, portMAX_DELAY);
+  esp_i2s::i2s_read(esp_i2s::I2S_NUM_0, rec_buffer, record_size, &sample_size, portMAX_DELAY);
   if (sample_size == 0) {
     Serial.printf("Record Failed!\n");
   } else {
@@ -326,9 +309,7 @@ void record_wav()
   file.close();
   Serial.printf("The recording is over.\n");
 }
-/* __________ */
 
-/* __________ Function to generate a WAV file header. */
 void generate_wav_header(uint8_t *wav_header, uint32_t wav_size, uint32_t sample_rate)
 {
   // See this for reference: http://soundfile.sapp.org/doc/WaveFormat/
